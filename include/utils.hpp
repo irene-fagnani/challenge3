@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <mpi.h>
 #include "muparser_fun.hpp"
 
 /**
@@ -15,8 +16,25 @@
 
 template <typename T>
 void initialize_grid(std::vector<std::vector<T>> & u, T boundary_condition){
+
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
     for(std::size_t i=0;i<u.size();++i){
-        u[i][0]=u[i][u.size()-1]=u[0][i]=u[u.size()-1][i]=boundary_condition;
+        u[i][0]=u[i][u.size()-1]=boundary_condition;
+    }
+
+    if(rank==0){
+        for(std::size_t j=0;j<u[0].size();++j){
+            u[0][j]=boundary_condition;
+        }
+    }
+
+    if(rank==size-1){
+        for(std::size_t j=0;j<u[u.size()-1].size();++j){
+            u[u.size()-1][j]=boundary_condition;
+        }
     }
 }
 
@@ -32,11 +50,10 @@ void initialize_grid(std::vector<std::vector<T>> & u, T boundary_condition){
 
 template <typename T>
 double compute_error(const std::vector<std::vector<T>> & u, const std::vector<std::vector<T>> & u_old, int n){
-    if(n==1){
+    if(n==1)
         std::cerr<<"Error: n must be greater than 1"<<std::endl;
         exit(1);
-    }
-    double h=1/(n-1);
+
     double error=0.0;
 
     #pragma omp parallel for reduction(+:error)
@@ -45,7 +62,7 @@ double compute_error(const std::vector<std::vector<T>> & u, const std::vector<st
             error+=std::abs(u[i][j]-u_old[i][j])*std::abs(u[i][j]-u_old[i][j]);
         }
     }
-    return sqrt(h*error);
+    return error;
 }
 
 /**
@@ -58,14 +75,23 @@ double compute_error(const std::vector<std::vector<T>> & u, const std::vector<st
  */
 template <typename T>
 void jacobi_iteration(std::vector<std::vector<T>> & u, std::vector<std::vector<T>> & u_old, int local_n, int n, MuparserFun & f){
-    if(n==1){
-        std::cerr<<"Error: n must be greater than 1"<<std::endl;
-        exit(1);
-    }
+
+    int rank,size;
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    MPI_Comm_size(MPI_COMM_WORLD,&size);
+
+    int start_i=0, end_i=local_n;
+
+    if(rank==0)
+        start_i=1;
+
+    if(rank==size-1)
+        end_i=local_n-1;
+
     double h=1/(n-1);
     #pragma omp parallel for
-    for(std::size_t i=1;i<local_n;++i){
-        for(std::size_t j=1;j<n;++j){
+    for(std::size_t i=start_i;i<end_i;++i){
+        for(std::size_t j=1;j<n-1;++j){
             u[i][j]=0.25*(u_old[i-1][j]+u_old[i+1][j]+u_old[i][j-1]+u_old[i][j+1]+h*h*f(i,j));
         }
     }
@@ -114,9 +140,23 @@ void generateVTKFile(const std::string & filename,
             vtkFile <<  scalarField[i][j] << "\n";
         }
     }
-
 }
 
+template <typename T>
+void print_vector( std::vector<T> & v){
+    for(std::size_t i=0;i<v.size();++i){
+        std::cout<<v[i]<<" ";
+    }
+    std::cout<<std::endl;
+}
 
+template <typename T>
+void print_matrix( std::vector<std::vector<T>> & matrix){
+    for(std::size_t i=0;i<matrix.size();++i){
+        print_vector(matrix[i]);
+        std::cout<<std::endl;
+    }
+    std::cout<<std::endl;
+}
 
 
