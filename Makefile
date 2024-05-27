@@ -1,8 +1,8 @@
-PACS_ROOT ?= /home/irene/PACS/pacs-examples/Examples
+PACS_ROOT = /home/irene/PACS/pacs-examples/Examples
 -include $(PACS_ROOT)/Makefile.inc
-CXX = g++
+CXX = mpic++
 CXXFLAGS = -std=c++20
-CPPFLAGS=-Wall -Wextra -O3 -I$(PACS_ROOT)/include 
+CPPFLAGS=-fopenmp -O3 -Wall -pedantic -I$(PACS_ROOT)/include 
 SRC_DIR = src
 INCLUDE_DIR = include 
 TARGET = main

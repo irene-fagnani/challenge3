@@ -2,6 +2,8 @@
 #include <memory>
 #include <string>
 
+#ifndef MUPARSER_FUN_HPP
+#define MUPARSER_FUN_HPP
 class MuparserFun
 {
 public:
@@ -40,3 +42,5 @@ private:
   double     m_vary;
   mu::Parser m_parser;
 };
+
+#endif

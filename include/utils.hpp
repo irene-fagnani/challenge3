@@ -14,9 +14,9 @@
  */
 
 template <typename T>
-void intialize_grid(std::vector<std::vector<T>> & u, int n, T boundary_condition){
-    for(std::size_t i=0;i<n;++i){
-        u[i][0]=u[i][n-1]=u[0][i]=u[n-1][i]=boundary_condition;
+void initialize_grid(std::vector<std::vector<T>> & u, T boundary_condition){
+    for(std::size_t i=0;i<u.size();++i){
+        u[i][0]=u[i][u.size()-1]=u[0][i]=u[u.size()-1][i]=boundary_condition;
     }
 }
 
@@ -57,15 +57,15 @@ double compute_error(const std::vector<std::vector<T>> & u, const std::vector<st
  * @param f The force function.
  */
 template <typename T>
-void jacobi_iteration(std::vector<std::vector<T>> & u, std::vector<std::vector<T>> & u_old, int n, MuparserFun f){
+void jacobi_iteration(std::vector<std::vector<T>> & u, std::vector<std::vector<T>> & u_old, int local_n, int n, MuparserFun & f){
     if(n==1){
         std::cerr<<"Error: n must be greater than 1"<<std::endl;
         exit(1);
     }
     double h=1/(n-1);
     #pragma omp parallel for
-    for(std::size_t i=1;i<u.size()-1;++i){
-        for(std::size_t j=1;j<u.size()-1;++j){
+    for(std::size_t i=1;i<local_n;++i){
+        for(std::size_t j=1;j<n;++j){
             u[i][j]=0.25*(u_old[i-1][j]+u_old[i+1][j]+u_old[i][j-1]+u_old[i][j+1]+h*h*f(i,j));
         }
     }
