@@ -62,7 +62,7 @@ int main(int argc, char** argv){
     send_and_receive_neighbors(local_U, prev_row, next_row, n, recv_counts[rank]);
 
     // Perform Jacobi iteration  
-    run_jacobi(local_U, local_U_old, f, h, recv_counts[rank], recv_start_idx[rank], n);
+    run_jacobi(local_U, local_U_old,prev_row, next_row, f, h, recv_counts[rank], recv_start_idx[rank], n);
 
      
         // Compute local error
