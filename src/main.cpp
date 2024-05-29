@@ -9,8 +9,8 @@ using json=nlohmann::json;
 
 
 int main(int argc, char** argv){
-
-    MPI_Init(&argc, &argv);
+    int provided;
+    MPI_Init_thread(&argc, &argv, MPI_THREAD_SERIALIZED, &provided);
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -62,49 +62,30 @@ int main(int argc, char** argv){
     send_and_receive_neighbors(local_U, prev_row, next_row, n, recv_counts[rank]);
 
     // Perform Jacobi iteration  
-    run_jacobi(local_U, local_U_old,prev_row, next_row, f, h, recv_counts[rank], recv_start_idx[rank], n);
+    run_jacobi(local_U, local_U_old,prev_row,next_row, f, h, recv_counts[rank], recv_start_idx[rank], n);
 
      
-        // Compute local error
-        error=0;
-         for(std::size_t i=0;i<recv_counts[rank];++i){
-           for(std::size_t j=0;j<n;++j){
-            error+=std::abs(local_U[i][j]-local_U_old[i][j])*std::abs(local_U[i][j]-local_U_old[i][j]);
-        }
-        }
-        
-        // Compute global error
-         MPI_Allreduce(&error, &global_error, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    // Compute local error
+    error=compute_local_error(local_U, local_U_old, h, recv_counts[rank], n);
+
+    // Compute global error
+    MPI_Allreduce(&error, &global_error, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     
-         global_error = sqrt(h*global_error);
-         local_U_old = local_U; 
+    global_error = sqrt(h*global_error);
+    local_U_old = local_U; 
      
-        iter++;
+    iter++;
+    
     }
    
 
-
-    if(rank == 0){
-        for(int p=1;p<size;p++){
-            for(std::size_t i=0;i<recv_counts[p];++i){
-                MPI_Recv(U[recv_start_idx[p]+i].data(), n, MPI_DOUBLE, p, p+i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            }
-        }
-
-        for(std::size_t i=0;i<recv_counts[rank];++i){
-            U[i]=local_U[i];
-        }
-    }else{
-        for(std::size_t i=0;i<recv_counts[rank];++i){
-            MPI_Send(local_U[i].data(), n, MPI_DOUBLE, 0, rank+i, MPI_COMM_WORLD);
-        }
-    
-    }
+    collect_solution(U, local_U, recv_counts, recv_start_idx, n);
 
    
     MPI_Barrier(MPI_COMM_WORLD);
+
+    // print the solution
     if (rank == 0) { 
-        print_matrix(U);
         generateVTKFile("solution.vtk",U, n, h);
     }
      
@@ -112,7 +93,8 @@ int main(int argc, char** argv){
 
 
 
-MPI_Finalize();
-return 0;
+    MPI_Finalize();
+    return 0;
+    
 }
 

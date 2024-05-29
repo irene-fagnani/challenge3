@@ -113,33 +113,56 @@ void send_and_receive_neighbors(std::vector<std::vector<T>> & local_U, std::vect
         }
 }
 /**
- * @brief Compute the error at each iteration.
- * @tparam T Elements type in the grid.
- * @param u The grid at the current iteration.
- * @param u_old The grid at the previous iteration.
- * @param n Number of rows and columns of the grid.
- * @return double The error computed as the L2 norm of the difference between the two grids.
+ * @brief Compute the error at each iteration
+ * @tparam T Type of the elements in the grid.
+ * @param local_U Local grid of the current process and iteration.
+ * @param local_U_old Local grid of the current process and of the last iteration.
+ * @param h Lenght of each sub-interval.
+ * @param local_n Number of rows of the current process.
+ * @param n Number of columns of the grid
+ * @return The error at each iteration
  */
 
 template <typename T>
-double compute_error(const std::vector<std::vector<T>> & u, const std::vector<std::vector<T>> & u_old, int n){
-
-    if(n==1)
-        std::cerr<<"Error: n must be greater than 1"<<std::endl;
-        exit(1);
-
-    double error=0.0;
-
-    #pragma omp parallel for reduction(+:error)
-    for(std::size_t i=1;i<u.size();++i){
-        for(std::size_t j=1;j<n;++j){
-            error+=std::abs(u[i][j]-u_old[i][j])*std::abs(u[i][j]-u_old[i][j]);
-        }
+double compute_local_error(std::vector<T> local_U,std::vector<T> local_U_old,double h, int local_n,int n){
+    double error=0;
+    for(std::size_t i=0;i<local_n;++i){
+        for(std::size_t j=0;j<n;++j){
+        error+=std::abs(local_U[i][j]-local_U_old[i][j])*std::abs(local_U[i][j]-local_U_old[i][j]);
     }
-
-    return error;
+ }
+ return error;
+        
 }
 
+
+
+void collect_solution(std::vector<std::vector<double>> & U, std::vector<std::vector<double>> & local_U, std::vector<int> & recv_counts, std::vector<int> & recv_start_idx, int n){
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    
+     if(rank == 0){
+        for(int p=1;p<size;p++){
+            for(std::size_t i=0;i<recv_counts[p];++i){
+                MPI_Recv(U[recv_start_idx[p]+i].data(), n, MPI_DOUBLE, p, p+i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                std::cout<<"ricevuto"<<std::endl;
+            }
+        }
+
+        for(std::size_t i=0;i<recv_counts[rank];++i){
+            U[i]=local_U[i];
+        }
+
+    }else{
+        for(std::size_t i=0;i<recv_counts[rank];++i){
+            MPI_Send(local_U[i].data(), n, MPI_DOUBLE, 0, rank+i, MPI_COMM_WORLD);
+            std::cout<<"inviato"<<std::endl;
+        }
+    
+    }
+
+}
 /**
  * @brief Run a Jacobi method iteration.
  * @tparam T Type of the elements in the grid.
@@ -157,6 +180,7 @@ void run_jacobi(std::vector<std::vector<T>> & local_U,std::vector<std::vector<T>
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     
+    # pragma omp shared for(local_U)
     for(std::size_t i=1;i<local_n-1;++i){
 
         for(std::size_t j=1;j<n-1;++j){
@@ -165,11 +189,13 @@ void run_jacobi(std::vector<std::vector<T>> & local_U,std::vector<std::vector<T>
 
             }
         }
+    MPI_Barrier(MPI_COMM_WORLD);    
         
         
         
     if(rank<size-1){
-
+        
+        # pragma omp shared for(local_U)
         for(std::size_t j=1;j<n-1;++j){
 
             local_U[local_n-1][j]=0.25*(local_U_old[local_n-2][j]+next_row[j]+local_U_old[local_n-1][j-1]+local_U_old[local_n-1][j+1]+h*h*f(((local_n-1)+start_idx)*h,j*h));
@@ -178,7 +204,8 @@ void run_jacobi(std::vector<std::vector<T>> & local_U,std::vector<std::vector<T>
     }
 
     if(rank>0){
-
+        
+        # pragma omp shared for(local_U)
         for(std::size_t j=1;j<n-1;++j){
 
             local_U[0][j]=0.25*(prev_row[j]+local_U_old[0][j-1]+local_U_old[0][j+1]+local_U_old[1][j]+h*h*f(start_idx*h,j*h));
