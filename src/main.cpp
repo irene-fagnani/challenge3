@@ -1,4 +1,5 @@
-#include "utils.hpp"
+#include "utils_parallel.hpp"
+#include "utils_sequential.hpp"
 #include "json.hpp"
 #include "muparser_fun.hpp"
 #include <cmath>
@@ -9,6 +10,7 @@ using json=nlohmann::json;
 
 
 int main(int argc, char** argv){
+
     int provided;
     MPI_Init_thread(&argc, &argv, MPI_THREAD_SERIALIZED, &provided);
     int rank, size;
@@ -18,7 +20,7 @@ int main(int argc, char** argv){
     // read data from json file
     std::ifstream file("data.json");
     json data = json::parse(file);
-    MuparserFun f(data.value("f","x*y"));
+    MuparserFun f(data.value("f",""));
     int n=data.value("n",11);
     int niter=data.value("niter",1000);
     double tol=data.value("tol",1e-4);
@@ -30,71 +32,31 @@ int main(int argc, char** argv){
         std::cerr<<"Error: n must be greater than 1"<<std::endl;
         exit(1);
     }
-
-    // Initialize recv_counts, recv_start_idx vectors. 
-    // recv_counts contains the number of rows each process will receive, 
-    // recv_start_idx contains the starting index of each process.
-    std::vector<int> recv_counts(size,0), recv_start_idx(size,0);   
-    initialize_recv_vectors(recv_counts, recv_start_idx, n);
     
-    // Initialize local_U and local_U_old vectors, with zero.
-    std::vector<std::vector<double>> local_U(recv_counts[rank], std::vector<double>(n, 0.0));
-    std::vector<std::vector<double>> local_U_old(recv_counts[rank], std::vector<double>(n, 0.0));
-
-    // Initialize the grid with boundary conditions
-    set_boundary_conditions(local_U, 0.0);
+  
     
-    // Initialize the total grid, which will contains the final solution.
-    std::vector<std::vector<double>> U(n, std::vector<double>(n, 0.0));
-    
-    // Initialize the previous and next row vectors, which will contain the boundary rows of the neighboring processes.
-    std::vector<double> prev_row(n, 0.0);
-    std::vector<double> next_row(n, 0.0);
-    
-    // Initialize error, global error and the number of iterations.
-    double global_error = tol+1;
-    double error=0;
-    int iter = 0;
-
-    while (global_error > tol && iter < niter){
-
-    // Exchange boundary rows with neighboring processes
-    send_and_receive_neighbors(local_U, prev_row, next_row, n, recv_counts[rank]);
-
-    // Perform Jacobi iteration  
-    run_jacobi(local_U, local_U_old,prev_row,next_row, f, h, recv_counts[rank], recv_start_idx[rank], n);
-
-     
-    // Compute local error
-    error=compute_local_error(local_U, local_U_old, h, recv_counts[rank], n);
-
-    // Compute global error
-    MPI_Allreduce(&error, &global_error, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    
-    global_error = sqrt(h*global_error);
-    local_U_old = local_U; 
-     
-    iter++;
-    
+    if(size==1){
+        // Solve the problem in sequential, and print the computation timing
+    auto t0_s=std::chrono::high_resolution_clock::now();
+    sequential::solve(tol,n,niter,f,h);
+    auto t1_s=std::chrono::high_resolution_clock::now();
+    auto delta_t_s=std::chrono::duration_cast<std::chrono::microseconds>(t1_s-t0_s);
+    std::cout<<"Time for the multiplication, in the sequential case: "<<delta_t_s.count()<<" microseconds\n";
     }
-   
-
-    collect_solution(U, local_U, recv_counts, recv_start_idx, n);
-
-   
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    // print the solution
-    if (rank == 0) { 
-        generateVTKFile("solution.vtk",U, n, h);
+    
+    if(size>1){
+      // Solve the problem in parallel, and print the computation timing
+    auto t0_p=std::chrono::high_resolution_clock::now();
+    parallel::solve(tol,n,niter,f,h);
+    auto t1_p=std::chrono::high_resolution_clock::now();
+    auto delta_t_p=std::chrono::duration_cast<std::chrono::microseconds>(t1_p-t0_p);
+        if(rank==0){
+            std::cout<<"Time for the computation, in the parallel case: "<<delta_t_p.count()<<" microseconds\n";
+        }
     }
-     
-    MPI_Barrier(MPI_COMM_WORLD);
-
-
+    
 
     MPI_Finalize();
     return 0;
-    
 }
 
