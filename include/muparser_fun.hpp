@@ -32,7 +32,7 @@ public:
   operator()(const double &x, const double &y)
   {
     m_varx = x;
-    m_vary=y;
+    m_vary = y;
     double f = m_parser.Eval();
     return f;
   };

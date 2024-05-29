@@ -7,114 +7,140 @@
 #include <iostream>
 using json=nlohmann::json;
 
+
 int main(int argc, char** argv){
-int provided;
-MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE,&provided);
-int rank, size;
-MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-MPI_Comm_size(MPI_COMM_WORLD, &size);
-std::ifstream file("data.json");
-json data = json::parse(file);
 
-MuparserFun f(data.value("f",""));
-int n=data.value("n",10);
-int niter=data.value("niter",1000);
-double tol=data.value("tol",1e-4);
+    MPI_Init(&argc, &argv);
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    
+    // read data from json file
+    std::ifstream file("data.json");
+    json data = json::parse(file);
+    MuparserFun f(data.value("f","x*y"));
+    int n=data.value("n",11);
+    int niter=data.value("niter",1000);
+    double tol=data.value("tol",1e-4);
+    
+    // compute the step size
+    double h=1.0/(n-1);
 
-if(n==1){
+    if(n==1){
         std::cerr<<"Error: n must be greater than 1"<<std::endl;
         exit(1);
-}
+    }
 
+    // Initialize recv_counts, recv_start_idx vectors. 
+    // recv_counts contains the number of rows each process will receive, 
+    // recv_start_idx contains the starting index of each process.
+    std::vector<int> recv_counts(size,0), recv_start_idx(size,0);   
+    initialize_recv_vectors(recv_counts, recv_start_idx, n);
+    
+    // Initialize local_U and local_U_old vectors, with zero.
+    std::vector<std::vector<double>> local_U(recv_counts[rank], std::vector<double>(n, 0.0));
+    std::vector<std::vector<double>> local_U_old(recv_counts[rank], std::vector<double>(n, 0.0));
 
-double h=1/(n-1);
+    // Initialize the grid with boundary conditions
+    set_boundary_conditions(local_U, 0.0);
+    
+    // Initialize the total grid, which will contains the final solution.
+    std::vector<std::vector<double>> U(n, std::vector<double>(n, 0.0));
+    
+    // Initialize the previous and next row vectors, which will contain the boundary rows of the neighboring processes.
+    std::vector<double> prev_row(n, 0.0);
+    std::vector<double> next_row(n, 0.0);
+    
+    // Initialize error, global error and the number of iterations.
+    double global_error = tol+1;
+    double error=0;
+    int iter = 0;
 
-std::vector<int> recv_counts(size,0), recv_start_idx(size,0);   
-int start_idx=0;
-for(int i=0;i<size;i++){
-    recv_counts[i]=(n%size>i) ? n/size+1:n/size;
-    recv_start_idx[i]=start_idx;
-    start_idx+=recv_counts[i];
-}
+    while (global_error > tol && iter < niter){
 
-int local_n=(n%size>rank) ? n/size+1:n/size;
+        // Exchange boundary rows with neighboring processes
+        if (rank > 0){
+            MPI_Send(local_U[0].data(), n, MPI_DOUBLE, rank - 1, 1, MPI_COMM_WORLD);
+            MPI_Recv(prev_row.data(), n, MPI_DOUBLE, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+   
+        if (rank < size - 1){
+            MPI_Send(local_U[recv_counts[rank] - 1].data(), n, MPI_DOUBLE, rank + 1, 0, MPI_COMM_WORLD);
+            MPI_Recv(next_row.data(), n, MPI_DOUBLE, rank + 1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+      
+    // Perform Jacobi iteration  
+        for(std::size_t i=1;i<recv_counts[rank]-1;++i){
 
-// usare una forma per definire le matrici che sia contigua nella memoria
-std::vector<std::vector<double>> local_U(recv_counts[rank], std::vector<double>(n, 0.0));
-std::vector<std::vector<double>> local_U_old(recv_counts[rank], std::vector<double>(n, 0.0));
+            for(std::size_t j=1;j<n-1;++j){
+                local_U[i][j]=0.25*(local_U_old[i-1][j]+local_U_old[i+1][j]+local_U_old[i][j-1]+
+                local_U_old[i][j+1]+h*h*f(h*(recv_start_idx[rank]+i),j*h));
+            }
+        }
+        
+        
+        
+        if(rank<size-1){
+            for(std::size_t j=1;j<n-1;++j){
+                local_U[recv_counts[rank]-1][j]=0.25*(local_U_old[recv_counts[rank]-2][j]+next_row[j]+local_U_old[recv_counts[rank]-1][j-1]+local_U_old[recv_counts[rank]-1][j+1]+h*h*f(((recv_counts[rank]-1)+recv_start_idx[rank])*h,j*h));
+            }
+        }
 
-initialize_grid(local_U_old, 0.0);
+        if(rank>0){
+           for(std::size_t j=1;j<n-1;++j){
+                local_U[0][j]=0.25*(prev_row[j]+local_U_old[0][j-1]+local_U_old[0][j+1]+local_U_old[1][j]+h*h*f(recv_start_idx[rank]*h,j*h));
+            }
+        }
 
-
-std::vector<double> prev_row(n, 0.0);
-std::vector<double> next_row(n, 0.0);
-
-double global_error = tol+1;
-int iter = 0;
-while (global_error > tol && iter < niter) {
-    // Exchange boundary rows with neighboring processes
-    if (rank > 0){
-        std::cout<<"\nInvio prima riga al processo precedente "<<rank<<std::endl;
-        MPI_Send(local_U[0].data(), n, MPI_DOUBLE, rank - 1, 1, MPI_COMM_WORLD);
-        for(int i=0;i<n;i++)
-            std::cout<<local_U[0][i]<<" ";
-            std::cout<<std::endl;
-        //std::cout<<"\nRicevo prev_row dal processo precedente "<<rank<<std::endl;
-        //MPI_Recv(prev_row.data(), n, MPI_DOUBLE, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+     
+        // Compute local error
+        error=0;
+         for(std::size_t i=0;i<recv_counts[rank];++i){
+           for(std::size_t j=0;j<n;++j){
+            error+=std::abs(local_U[i][j]-local_U_old[i][j])*std::abs(local_U[i][j]-local_U_old[i][j]);
+        }
+        }
+        
+        // Compute global error
+         MPI_Allreduce(&error, &global_error, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    
+         global_error = sqrt(h*global_error);
+         local_U_old = local_U; 
+     
+        iter++;
     }
    
-    if (rank < size - 1){
-        //std::cout<<"\nInvio ultima riga al processo successivo "<<rank<<std::endl;
-        //MPI_Send(local_U[local_n - 1].data(), n, MPI_DOUBLE, rank + 1, 0, MPI_COMM_WORLD);
-        std::cout<<"\nRicevo next_row dal processo successivo "<<rank<<std::endl;
-        MPI_Recv(next_row.data(), n, MPI_DOUBLE, rank + 1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        for(int i=0;i<n;i++)
-            std::cout<<next_row[i]<<" ";
-            std::cout<<std::endl;
-    }
-    
-    // Perform Jacobi iteration
-    int start_i=0, end_i=local_n;
 
-    if(rank==0)
-        start_i=1;
 
-    if(rank==size-1)
-        end_i=local_n-1;
-
-    local_U_old = local_U;
-     for(std::size_t i=start_i;i<end_i;++i){
-        for(std::size_t j=1;j<n-1;++j){
-            local_U[i][j]=0.25*(local_U_old[i-1][j]+local_U_old[i+1][j]+local_U_old[i][j-1]+local_U_old[i][j+1]+h*h*f(i,j));
+    if(rank == 0){
+        for(int p=1;p<size;p++){
+            for(std::size_t i=0;i<recv_counts[p];++i){
+                MPI_Recv(U[recv_start_idx[p]+i].data(), n, MPI_DOUBLE, p, p+i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            }
         }
-    }
 
-    // Compute local error
-    double local_error = compute_error(local_U, local_U_old, local_n);
-        
-    // Compute global error
-    MPI_Allreduce(&local_error, &global_error, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    global_error = sqrt(h*global_error);
-
-     iter++;
-    }
-
-    // Gather results to the master process
-    std::vector<std::vector<double>> U_global;
-    if (rank == 0) {
-        U_global.resize(n, std::vector<double>(n, 0.0));
-    }
-
-    for (int i = 1; i <= local_n; ++i) {
-        MPI_Gather(U[i].data(), n, MPI_DOUBLE, U_global[i-1].data(), n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    }
+        for(std::size_t i=0;i<recv_counts[rank];++i){
+            U[i]=local_U[i];
+        }
+    }else{
+        for(std::size_t i=0;i<recv_counts[rank];++i){
+            MPI_Send(local_U[i].data(), n, MPI_DOUBLE, 0, rank+i, MPI_COMM_WORLD);
+        }
     
-    // Save the solution to a file
-    if (rank == 0) {
-        generateVTKFile("solution.vtk",U_global, n, h);
     }
+
+   
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == 0) { 
+        print_matrix(U);
+        generateVTKFile("solution.vtk",U, n, h);
+    }
+     
+    MPI_Barrier(MPI_COMM_WORLD);
 
 
 
 MPI_Finalize();
+return 0;
 }
+
