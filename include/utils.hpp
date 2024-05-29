@@ -87,7 +87,31 @@ void initialize_recv_vectors(std::vector<int> & recv_counts, std::vector<int> & 
     }
 }
 
+/**
+ * @brief Exchange boundary rows with neighboring processes
+ * 
+ * @tparam T Type of the elements in the grid.
+ * @param local_U Vector containing the grid of the current process.
+ * @param prev_row Vector containing the previous row of the current process.
+ * @param next_row Vector containing the next row of the current process.
+ * @param n Number of columns in the grid.
+ */
+template<typename T>
+void send_and_receive_neighbors(std::vector<std::vector<T>> & local_U, std::vector<double> & prev_row, std::vector<double> & next_row, int n, int local_n){
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+        if (rank > 0){
+            MPI_Send(local_U[0].data(), n, MPI_DOUBLE, rank - 1, 1, MPI_COMM_WORLD);
+            MPI_Recv(prev_row.data(), n, MPI_DOUBLE, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+   
+        if (rank < size - 1){
+            MPI_Send(local_U[local_n - 1].data(), n, MPI_DOUBLE, rank + 1, 0, MPI_COMM_WORLD);
+            MPI_Recv(next_row.data(), n, MPI_DOUBLE, rank + 1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+}
 /**
  * @brief Compute the error at each iteration.
  * @tparam T Elements type in the grid.
@@ -114,6 +138,53 @@ double compute_error(const std::vector<std::vector<T>> & u, const std::vector<st
     }
 
     return error;
+}
+
+/**
+ * @brief Run a Jacobi method iteration.
+ * @tparam T Type of the elements in the grid.
+ * @param local_U Local grid of the current process and iteration.
+ * @param local_U_old Local grid of the current process and of the last iteration.
+ * @param f Force function.
+ * @param h Lenght of each sub-interval.
+ * @param recv_counts Number of rows of the current process.
+ * @param recv_start_idx Starting index of the rows of the current process.
+ * @param n Number of columns of the grid.
+ */
+template<typename T>
+void run_jacobi(std::vector<std::vector<T>> & local_U,std::vector<std::vector<T>> & local_U_old,MuparserFun f,double h,int recv_counts[rank],int recv_start_idx[rank],int n){
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    
+    for(std::size_t i=1;i<recv_counts[rank]-1;++i){
+
+        for(std::size_t j=1;j<n-1;++j){
+
+            local_U[i][j]=0.25*(local_U_old[i-1][j]+local_U_old[i+1][j]+local_U_old[i][j-1]+local_U_old[i][j+1]+h*h*f(h*(recv_start_idx[rank]+i),j*h));
+
+            }
+        }
+        
+        
+        
+    if(rank<size-1){
+
+        for(std::size_t j=1;j<n-1;++j){
+
+            local_U[recv_counts[rank]-1][j]=0.25*(local_U_old[recv_counts[rank]-2][j]+next_row[j]+local_U_old[recv_counts[rank]-1][j-1]+local_U_old[recv_counts[rank]-1][j+1]+h*h*f(((recv_counts[rank]-1)+recv_start_idx[rank])*h,j*h));
+
+        }
+    }
+
+    if(rank>0){
+
+        for(std::size_t j=1;j<n-1;++j){
+
+            local_U[0][j]=0.25*(prev_row[j]+local_U_old[0][j-1]+local_U_old[0][j+1]+local_U_old[1][j]+h*h*f(recv_start_idx[rank]*h,j*h));
+            
+            }
+        }
 }
 
 /**

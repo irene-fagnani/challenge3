@@ -58,39 +58,11 @@ int main(int argc, char** argv){
 
     while (global_error > tol && iter < niter){
 
-        // Exchange boundary rows with neighboring processes
-        if (rank > 0){
-            MPI_Send(local_U[0].data(), n, MPI_DOUBLE, rank - 1, 1, MPI_COMM_WORLD);
-            MPI_Recv(prev_row.data(), n, MPI_DOUBLE, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }
-   
-        if (rank < size - 1){
-            MPI_Send(local_U[recv_counts[rank] - 1].data(), n, MPI_DOUBLE, rank + 1, 0, MPI_COMM_WORLD);
-            MPI_Recv(next_row.data(), n, MPI_DOUBLE, rank + 1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }
-      
+    // Exchange boundary rows with neighboring processes
+    send_and_receive_neighbors(local_U, prev_row, next_row, n, recv_counts[rank]);
+
     // Perform Jacobi iteration  
-        for(std::size_t i=1;i<recv_counts[rank]-1;++i){
-
-            for(std::size_t j=1;j<n-1;++j){
-                local_U[i][j]=0.25*(local_U_old[i-1][j]+local_U_old[i+1][j]+local_U_old[i][j-1]+
-                local_U_old[i][j+1]+h*h*f(h*(recv_start_idx[rank]+i),j*h));
-            }
-        }
-        
-        
-        
-        if(rank<size-1){
-            for(std::size_t j=1;j<n-1;++j){
-                local_U[recv_counts[rank]-1][j]=0.25*(local_U_old[recv_counts[rank]-2][j]+next_row[j]+local_U_old[recv_counts[rank]-1][j-1]+local_U_old[recv_counts[rank]-1][j+1]+h*h*f(((recv_counts[rank]-1)+recv_start_idx[rank])*h,j*h));
-            }
-        }
-
-        if(rank>0){
-           for(std::size_t j=1;j<n-1;++j){
-                local_U[0][j]=0.25*(prev_row[j]+local_U_old[0][j-1]+local_U_old[0][j+1]+local_U_old[1][j]+h*h*f(recv_start_idx[rank]*h,j*h));
-            }
-        }
+    run_jacobi(local_U, local_U_old, f, h, recv_counts[rank], recv_start_idx[rank], n);
 
      
         // Compute local error
