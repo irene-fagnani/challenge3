@@ -10,6 +10,7 @@ public:
   MuparserFun(const MuparserFun &m)
     : m_parser(m.m_parser)
   {
+    m_parser.DefineConst("pi",M_PI);
     m_parser.DefineVar("x", &m_varx);
     m_parser.DefineVar("y", &m_vary);
   };
@@ -18,6 +19,7 @@ public:
   {
     try
       {
+        m_parser.DefineConst("pi",M_PI);
         m_parser.DefineVar("x", &m_varx);
         m_parser.DefineVar("y", &m_vary);
         m_parser.SetExpr(s);
