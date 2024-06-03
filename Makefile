@@ -1,5 +1,4 @@
 PACS_ROOT = /home/irene/PACS/pacs-examples/Examples
--include $(PACS_ROOT)/Makefile.inc
 CXX = mpic++
 CXXFLAGS = -std=c++20
 CPPFLAGS=-fopenmp -O3 -pedantic -I$(PACS_ROOT)/include 
