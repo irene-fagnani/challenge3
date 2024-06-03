@@ -1,5 +1,8 @@
 #include "utils.hpp"
-
+/**
+ * @brief Namespace containing the parallel implementation of the Jacobi method.
+ * 
+ */
 namespace parallel{
     /**
  * @brief Initialize the grid with the boundary condition provided as input.
@@ -174,8 +177,17 @@ void run_jacobi(std::vector<std::vector<T>> & local_U,std::vector<std::vector<T>
         }
 }
 
-
-void solve(double tol, int n, int niter, MuparserFun f, double h){
+/**
+ * @brief Solve the problem in parallel using the Jacobi method.
+ * 
+ * @param tol Tolerance of the solution.
+ * @param n Dimension of the grid.
+ * @param niter Maximum number of iterations.
+ * @param f Force function.
+ * @param h Length of each sub-interval.
+ */
+double solve(double tol, int n, int niter, MuparserFun f, MuparserFun u_exact, double h){
+    double L2_error=0;
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -235,10 +247,13 @@ void solve(double tol, int n, int niter, MuparserFun f, double h){
     // print the solution
     if (rank == 0) { 
         generateVTKFile("output/ParallelSol.vtk",U, n, h);
+        L2_error=compute_L2_error(U,u_exact,h);
     }
      
     MPI_Barrier(MPI_COMM_WORLD);
 
+    return L2_error;
 
+   
 }
 }

@@ -4,6 +4,10 @@
 
 #ifndef MUPARSER_FUN_HPP
 #define MUPARSER_FUN_HPP
+/**
+ * @brief This class interacts with the muParser library to evaluate a function.
+ * 
+ */
 class MuparserFun
 {
 public:

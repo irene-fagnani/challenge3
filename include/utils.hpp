@@ -85,6 +85,17 @@ void generateVTKFile(const std::string & filename,
     return;
 }
 
+template<typename T>
+double compute_L2_error(std::vector<std::vector<T>> & U,MuparserFun U_exact,double h){
+    double error=0;
+    for(std::size_t i=0;i<U.size();++i){
+        for(std::size_t j=0;j<U.size();++j){
+        error+=std::abs(U[i][j]-U_exact(i*h,j*h))*std::abs(U[i][j]-U_exact(i*h,j*h));
+        }
+    }
+    return sqrt(h*error);
+}
+
 #endif
 
 

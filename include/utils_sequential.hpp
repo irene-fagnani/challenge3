@@ -1,5 +1,8 @@
 #include "utils.hpp"
-
+ /**
+  * @brief Namespace containing the sequential implementation of the Jacobi method.
+  * 
+  */
 namespace sequential{
     /**
  * @brief Initialize the grid with the boundary condition provided as input.
@@ -54,7 +57,8 @@ double compute_error(std::vector<T> U,std::vector<T> U_old,double h){
  */
 
 template<typename T>
-void run_jacobi(std::vector<std::vector<T>> & U,std::vector<std::vector<T>> & U_old,MuparserFun f,double h){
+void run_jacobi(std::vector<std::vector<T>> & U,std::vector<std::vector<T>> & U_old,MuparserFun f, double h){
+    double L2_error=0;
   
     for(std::size_t i=1;i<U.size()-1;++i){
 
@@ -62,13 +66,13 @@ void run_jacobi(std::vector<std::vector<T>> & U,std::vector<std::vector<T>> & U_
 
             U[i][j]=0.25*(U_old[i-1][j]+U_old[i+1][j]+U_old[i][j-1]+U_old[i][j+1]+h*h*f(i*h,j*h));
 
-            }
         }
-
     }
 
+}
 
-void solve(double tol, int n, int niter, MuparserFun f, double h){
+
+double solve(double tol, int n, int niter, MuparserFun f, MuparserFun u_exact, double h){
 
 // Initialize local_U and local_U_old vectors, with zero.
 std::vector<std::vector<double>> U(n, std::vector<double>(n, 0.0));
@@ -99,7 +103,9 @@ iter++;
 }
    
 generateVTKFile("output/SequentialSol.vtk",U, n, h);
-   
 
+return compute_L2_error(U,u_exact,h);
+   
 }
+
 }
