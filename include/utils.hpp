@@ -85,6 +85,15 @@ void generateVTKFile(const std::string & filename,
     return;
 }
 
+/**
+ * @brief Compute the L2 error between the numerical solution and the exact solution.
+ * 
+ * @tparam T Type of the elements in the grid.
+ * @param U Computed solution.
+ * @param U_exact Exact solution.
+ * @param h Dimension of each sub-interval.
+ * @return double L2 error between the computed and the exact solution.
+ */
 template<typename T>
 double compute_L2_error(std::vector<std::vector<T>> & U,MuparserFun U_exact,double h){
     double error=0;

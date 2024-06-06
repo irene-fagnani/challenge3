@@ -71,7 +71,17 @@ void run_jacobi(std::vector<std::vector<T>> & U,std::vector<std::vector<T>> & U_
 
 }
 
-
+/**
+ * @brief Solve the problem using the Jacobi method.
+ * 
+ * @param tol Tolerance of the solution.
+ * @param n Dimension of the grid.
+ * @param niter Maximum number of iterations.
+ * @param f Force function.
+ * @param u_exact Exact solution.
+ * @param h Dimension of each sub-interval.
+ * @return double L2 error.
+ */
 double solve(double tol, int n, int niter, MuparserFun f, MuparserFun u_exact, double h){
 
 // Initialize local_U and local_U_old vectors, with zero.

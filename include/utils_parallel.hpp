@@ -101,7 +101,15 @@ double compute_local_error(std::vector<T> local_U,std::vector<T> local_U_old,dou
 }
 
 
-
+/**
+ * @brief Collect the solution from all the processes.
+ * 
+ * @param U Total grid containing the solution.
+ * @param local_U Local grid of the current process.
+ * @param recv_counts Vector containing the number of rows of each process.
+ * @param recv_start_idx Vector containing the starting index of the rows of each process.
+ * @param n Dimension of the total grid.
+ */
 void collect_solution(std::vector<std::vector<double>> & U, std::vector<std::vector<double>> & local_U, std::vector<int> & recv_counts, std::vector<int> & recv_start_idx, int n){
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
