@@ -96,6 +96,27 @@ double compute_L2_error(std::vector<std::vector<T>> & U,MuparserFun U_exact,doub
     return sqrt(h*error);
 }
 
+/**
+ * @brief Save the data in a file.
+ * 
+ * @param cores Number of cores used.
+ * @param matrix_size Dimension of the matrix.
+ * @param error Value  to save in the file.
+ * @param filename Name of the file to save the data.
+ */
+void save_data(int cores, int matrix_size, auto value,const std::string & filename){
+
+    std::ofstream outfile(filename, std::ios::app);
+    if (!outfile) {
+        std::cerr << "Error: could not open the file." << std::endl;
+        exit(1);
+    }
+    
+    outfile << cores << " " << matrix_size << " " << value << "\n";
+
+
+    outfile.close();
+}
 #endif
 
 

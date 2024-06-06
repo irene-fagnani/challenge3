@@ -1,0 +1,2 @@
+clean:
+	$(RM) data/*.dat

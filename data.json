@@ -3,5 +3,5 @@
     "u_exact":"sin(2*pi*x)*sin(2*pi*y)",
     "n" : 55,
     "niter":1000,
-    "tol":1e-08
+    "tol":1e-04
 }

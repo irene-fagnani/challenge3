@@ -23,7 +23,7 @@ $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $< $(LIBS) -o $@
 
 clean:
-	$(RM) $(OBJS) $(TARGET) *.vtk
+	$(RM) $(OBJS) $(TARGET) output/*.vtk
 
 distclean: clean
 	$(RM) *~
