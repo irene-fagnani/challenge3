@@ -104,7 +104,7 @@ double compute_L2_error(std::vector<std::vector<T>> & U,MuparserFun U_exact,doub
  * @param error Value  to save in the file.
  * @param filename Name of the file to save the data.
  */
-void save_data(int cores, int matrix_size, auto value,const std::string & filename){
+void save_data(int cores, int matrix_size, int matrix_size_max, auto value,const std::string & filename){
 
     std::ofstream outfile(filename, std::ios::app);
     if (!outfile) {
@@ -113,6 +113,10 @@ void save_data(int cores, int matrix_size, auto value,const std::string & filena
     }
     
     outfile << cores << " " << matrix_size << " " << value << "\n";
+    if(matrix_size==matrix_size_max){
+        outfile << "\n";
+    }
+    
 
 
     outfile.close();

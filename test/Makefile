@@ -1,2 +1,2 @@
 clean:
-	$(RM) data/*.dat
+	$(RM) data/*.dat *.png

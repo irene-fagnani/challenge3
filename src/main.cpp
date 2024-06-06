@@ -25,6 +25,7 @@ int main(int argc, char** argv){
     MuparserFun u_exact(data.value("u_exact",""));
     int n;
     bool test=false;
+    int nmax=0;
     
     if(argc>1){
         n=std::stoi(argv[1]);
@@ -34,6 +35,7 @@ int main(int argc, char** argv){
 
     if(argc>2){
         test=true;
+        nmax=std::stoi(argv[3]);
     }
 
     int niter=data.value("niter",1000);
@@ -45,8 +47,6 @@ int main(int argc, char** argv){
     }
     // compute the step size
     double h=1.0/(n-1);
-
-    
     
     long double L2_error=0;
     
@@ -78,8 +78,8 @@ int main(int argc, char** argv){
     if(rank==0){
         std::cout<<"L2 error: "<<L2_error<<std::endl;
         if(test==true){
-            save_data(size,n,L2_error,"test/data/errors.dat");
-            save_data(size,n,time,"test/data/times.dat");
+            save_data(size,n,nmax,L2_error,"test/data/errors.dat");
+            save_data(size,n,nmax,time,"test/data/times.dat");
         }
     }
     

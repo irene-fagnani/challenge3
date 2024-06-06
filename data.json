@@ -1,7 +1,7 @@
 {
     "f":"8*pi*pi*sin(2*pi*x)*sin(2*pi*y)",
     "u_exact":"sin(2*pi*x)*sin(2*pi*y)",
-    "n" : 55,
-    "niter":1000,
+    "n" : 256,
+    "niter":10000,
     "tol":1e-04
 }
