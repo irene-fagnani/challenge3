@@ -1,8 +1,7 @@
 PACS_ROOT = /home/irene/PACS/pacs-examples/Examples
 CXX = mpic++
 CXXFLAGS = -std=c++20
-CPPFLAGS=-fopenmp -O3 -pedantic -I$(PACS_ROOT)/include 
-# CPPFLAGS=-fopenmp -O3 -Wall -pedantic -I$(PACS_ROOT)/include 
+CPPFLAGS=-fopenmp -O3 -Wall -pedantic -I$(PACS_ROOT)/include 
 SRC_DIR = src
 INCLUDE_DIR = include 
 TARGET = main
