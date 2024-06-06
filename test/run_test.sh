@@ -6,7 +6,7 @@
 cd ..
 mpic++ -c -fopenmp -O3 -pedantic -I/home/irene/PACS/pacs-examples/Examples/include  -std=c++20 -Iinclude  src/main.cpp
 mpic++ -std=c++20 -L/home/irene/PACS/pacs-examples/Examples/lib main.o -lmuparser -lgomp -o main
-# Navigate back to the test directory
+
 
 # Run the program with 1, 2, and 4 cores
 for cores in 1 2 4; do
@@ -17,7 +17,10 @@ for cores in 1 2 4; do
     done
 done
 
+# Navigate back to the test directory
+
 cd test
 
+# Plot the results
 gnuplot plot_errors.gnuplot
 gnuplot plot_times.gnuplot
