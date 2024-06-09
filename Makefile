@@ -1,4 +1,4 @@
-PACS_ROOT = /home/irene/PACS/pacs-examples/Examples
+# PACS_ROOT = /home/irene/PACS/pacs-examples/Examples
 CXX = mpic++
 CXXFLAGS = -std=c++20
 CPPFLAGS=-fopenmp -O3 -Wall -pedantic -I$(PACS_ROOT)/include 
