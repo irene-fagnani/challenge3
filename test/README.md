@@ -29,6 +29,10 @@ to remove .png and .dat files
 ![LPlot of L2 errors](images/error_plot.png)
 ![LPlot of time of computing](images/time_plot.png)
 
+The scale on the y-axis is logaritmic with 10 basis.
+
+
+
 ## Note
 In `error_plot.png`, the graph for 1,2 and 4 cores overlaps.
 
