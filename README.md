@@ -28,6 +28,7 @@ $U^{(k+1)}(i,j)=\frac{1}{4}(U^{(k)}(i-1,j)+U^{(k)}(i+1,j)+U^{(k)}(i,j-1)+U^{(k)}
 
 
 ## Content of the repository
++ [test](https://github.com/irene-fagnani/challenge3/tree/main/test) folder, where it is possible to run a test (also, my results in tems of graphs are collected).
 + [include](https://github.com/irene-fagnani/challenge3/tree/main/include) folder, which contains all the `.hpp` files. [muparser_fun.hpp](https://github.com/irene-fagnani/challenge3/blob/main/include/muparser_fun.hpp), the file that allows to read a function as a string and transform it in a `MuParser` type and allows to use the `MuParser.h` library. [utils_parallel.hpp](https://github.com/irene-fagnani/challenge3/blob/main/include/utils_parallel.hpp), which contains all the functions needed to solve the problem. [utils.hpp](https://github.com/irene-fagnani/challenge3/blob/main/include/utils.hpp), which contains functions needed to save datas in files and print structures.
 + [src](https://github.com/irene-fagnani/challenge3/blob/main/src/), the folder that contains `.cpp` files (in this case, only the main.cpp).
 + [output](https://github.com/irene-fagnani/challenge3/blob/main/output/) folder, which contains the `.vtk` files create by the execution of the program (to create if there isn't).
