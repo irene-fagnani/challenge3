@@ -4,13 +4,7 @@
 
 Consider the Laplace equation for modeling heat diffusion over a square domain with a prescribed temperature (Dirichlet conditions) on the entire boundary:
 
-$\left\{ \begin{array}{cl}
--\Delta u =f(x) & in \quad \Omega=(0,1)^2  \\
-u=0 & on\quad  \left\{x=0\right\} \\
-u=0 & on\quad  \left\{x=1\right\} \\
-u=0 & on\quad  \left\{y=0\right\} \\
-u=0 & on\quad  \left\{y=1\right\} \\
-\end{array} \right.$
+$\left\{\begin{array}{cl}-\Delta u =f(x) & in \quad \Omega=(0,1)^2\\u=0 & on\quad  \left\{x=0\right\} \\ u=0 & on\quad  \left\{x=1\right\} \\ u=0 & on\quad  \left\{y=0\right\} \\ u=0 & on\quad  \left \{y=1\right\} \\ \end{array} \right.$
 
 A possible approach to solve this problem is the Jacobi iteration method. Given a uniform Cartesian grid of points along each coordinate direction, the goal is to find the discrete solution $u_{ij}=u(x_i,y_j), \quad i,j=1,...,n$ at each point of this grid.
 
@@ -36,3 +30,4 @@ $U^{(k+1)}(i,j)=\frac{1}{4}(U^{(k)}(i-1,j)+U^{(k)}(i+1,j)+U^{(k)}(i,j-1)+U^{(k)}
 
 
 ## Content of the repository
++ 
