@@ -254,7 +254,7 @@ double solve(double tol, int n, int niter, MuparserFun f, MuparserFun u_exact, d
 
     // print the solution
     if (rank == 0) { 
-        generateVTKFile("output/ParallelSol.vtk",U, n, h);
+        generateVTKFile("output/Sol.vtk",U, n, h);
         L2_error=compute_L2_error(U,u_exact,h);
     }
      

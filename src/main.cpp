@@ -1,5 +1,4 @@
 #include "utils_parallel.hpp"
-#include "utils_sequential.hpp"
 #include "json.hpp"
 #include "muparser_fun.hpp"
 #include <cmath>
@@ -52,30 +51,14 @@ int main(int argc, char** argv){
     
     double time=0;
 
-    if(size==1){
-        // Solve the problem in sequential, and print the computation timing
-    auto t0=std::chrono::high_resolution_clock::now();
-    L2_error=sequential::solve(tol,n,niter,f,u_exact,h);
-    auto t1=std::chrono::high_resolution_clock::now();
-    auto delta_t=std::chrono::duration_cast<std::chrono::microseconds>(t1-t0);
-    std::cout<<"Time for the multiplication, in the sequential case: "<<delta_t.count()<<" microseconds\n";
-    time=delta_t.count();
-    }
-    
-    if(size>1){
-      // Solve the problem in parallel, and print the computation timing
     auto t0=std::chrono::high_resolution_clock::now();
     L2_error=parallel::solve(tol,n,niter,f,u_exact,h);
     auto t1=std::chrono::high_resolution_clock::now();
     auto delta_t=(std::chrono::duration_cast<std::chrono::microseconds>(t1-t0));
-        if(rank==0){
-            std::cout<<"Time for the computation, in the parallel case: "<<delta_t.count()<<" microseconds\n";
-            time=delta_t.count();
-        }
-    }
     
-
     if(rank==0){
+        std::cout<<"Time for the computation, in the parallel case: "<<delta_t.count()<<" microseconds\n";
+        time=delta_t.count();
         std::cout<<"L2 error: "<<L2_error<<std::endl;
         if(test==true){
             save_data(size,n,nmax,L2_error,"test/data/errors.dat");

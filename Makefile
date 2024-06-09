@@ -17,7 +17,6 @@ all: $(TARGET)
 %.o: $(SRC_DIR)/%.cpp
 	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $(INCLUDES) $<
 
-
 $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $< $(LIBS) -o $@
 

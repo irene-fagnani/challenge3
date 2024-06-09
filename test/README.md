@@ -27,4 +27,4 @@ to remove .png and .dat files
 + A [Makefile](https://github.com/irene-fagnani/challenge3/blob/main/test/Makefile) to delete the .dat files in the data folder and the .png graphs.
 
 ## Note
-In `error_plot.png`, the graph for 2 and 4 cores overlaps.
+In `error_plot.png`, the graph for 1,2 and 4 cores overlaps.

@@ -50,8 +50,12 @@ template <typename T>
 void generateVTKFile(const std::string & filename, 
                      const std::vector<std::vector<T>> & scalarField, 
                      int n, double h) {
-
-    std::ofstream vtkFile(filename);
+    int size;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    std::ostringstream oss;
+    oss << filename << "_" << size << "_" << n << ".vtk";
+    std::string completeFilename = oss.str();
+    std::ofstream vtkFile(completeFilename);
 
     if (!vtkFile.is_open()) {
         std::cerr << "Error: could not open file " << filename << std::endl;
