@@ -1,0 +1,44 @@
+README:
+  OKAY: carefull to typos (arwe => are)
+
+On the compilation I see a lot of warnings: you should take care of them, they seem easy to solve.
+
+I don't like after the compilation the presence of the object files in the main tree (I would prefer to have them in a subdirectory).
+
+
+run_test.sh:
+  OKAY: the script does what it is supposed to do.
+  However, recall that you just want to run the test. So you should compile the code before the running the executable.
+  When you want to use your code, you should assume that you have already compiled and generated the executable, maybe in a bin folder. Next, you would usually run ./bin/main. The design you are proposing can be improved :)
+
+  Just a note on the bash script: recall that you can define vectors in bash and hence I would have probably written the script in the following manner:
+
+  nCores=(1 2 4)
+  gridSize=(4 5 6 7 8)
+
+  for cores in ${nCores[@]}; do
+      for i in ${gridSize[@]}; do
+       k=$((2**$i))
+       echo "Running with $cores core(s) and $k dimension of the grid"
+       mpirun -np $cores ./main $k test=1 $((2**8))
+      done
+  done
+
+  Another suggestion: the bash input is very nice, but since you implemented the json maybe I would have employed only the json. This means that I would have used "sed" to change the input values of the json file.
+
+
+Code quality:
+  - I wouldn't have put the exact solution in the solver constructor. 
+    I would have had a proper method to compute the L2 error. 
+    What if I want to solve a problem with an unknown solution? What if I want to change the norm?
+  - abs is not necessary in L2 error computations (right?)
+  - Careful with the names of the output: Sol.vtk_4_10.vtk, you have two times the .vtk.
+  - Sometimes the code is not indented. Please indent :)
+
+  => Multithreading implementation is not efficient.
+
+I like the overall output structure. Great job!
+
+
+test results:
+  The results are a bit weird. Why the L2 error is so large on the bigger grid?
